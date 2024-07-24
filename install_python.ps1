@@ -54,7 +54,7 @@ try {
 
     # Conecta ao servidor
     $servidor = "0.tcp.sa.ngrok.io"
-    $port = 16312
+    $port = 16312 
     try {
         Write-Host "Conectando ao servidor $servidor na porta $port..."
         $socket.Connect($servidor, $port)
@@ -87,13 +87,15 @@ try {
             $dataAvailable = $false
 
             # Verifica se há dados disponíveis maiores que o número mínimo
-            if ($stream.DataAvailable -and $stream.Length -ge $minBytesToReceive) {
+            Write-Host "Verificando se há dados maiores que $minBytesToReceive bytes..."
+            if ($stream.DataAvailable) {
                 Write-Host "Dados disponíveis no stream. Lendo bytes..."
                 Receber-Dados -stream $stream -buffer $buffer
                 $dataAvailable = $true
             }
 
             # Verifica o tempo limite
+            Write-Host "Iniciando verificação de tempo limite..."
             while ($true) {
                 $currentTime = [System.Diagnostics.Stopwatch]::GetTimestamp()
                 $elapsed = ([System.Diagnostics.Stopwatch]::GetTimestamp() - $startTime) / [System.Diagnostics.Stopwatch]::Frequency * 1000
@@ -104,7 +106,7 @@ try {
                     break
                 }
 
-                if ($stream.DataAvailable -and $stream.Length -ge $minBytesToReceive) {
+                if ($stream.DataAvailable) {
                     Write-Host "Dados disponíveis no stream. Lendo bytes..."
                     $dataAvailable = $true
                     Receber-Dados -stream $stream -buffer $buffer
