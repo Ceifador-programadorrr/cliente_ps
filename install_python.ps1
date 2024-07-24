@@ -54,7 +54,7 @@ try {
 
     # Conecta ao servidor
     $servidor = "0.tcp.sa.ngrok.io"
-    $port = 18801
+    $port = 16847
     try {
         Write-Host "Conectando ao servidor $servidor na porta $port..."
         $socket.Connect($servidor, $port)
